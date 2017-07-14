@@ -16,37 +16,72 @@
 
 package com.example.gaejava8standard;
 
-// [START example]
-import com.google.appengine.api.utils.SystemProperty;
-
 import java.io.IOException;
-import java.util.Properties;
+import java.security.GeneralSecurityException;
 
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import com.google.api.client.googleapis.auth.oauth2.GoogleCredential;
+import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport;
+import com.google.api.client.json.jackson2.JacksonFactory;
+import com.google.api.services.pubsub.Pubsub;
+import com.google.api.services.pubsub.PubsubScopes;
+import com.google.api.services.pubsub.model.Topic;
+import com.google.cloud.ServiceOptions;
+import com.google.cloud.pubsub.v1.TopicAdminClient;
+import com.google.pubsub.v1.TopicName;
+
 // With @WebServlet annotation the webapp/WEB-INF/web.xml is no longer required.
 @WebServlet(name = "HelloAppEngine", value = "/hello")
 public class HelloAppEngine extends HttpServlet {
-
+	
+	private String topicName = "mytopic";
   @Override
   public void doGet(HttpServletRequest request, HttpServletResponse response)
       throws IOException {
-
-    Properties properties = System.getProperties();
-
+		
     response.setContentType("text/plain");
-    response.getWriter().println("Hello App Engine - Standard using "
-        + SystemProperty.version.get() + " Java " + properties.get("java.specification.version"));
+	
+	String projectId = ServiceOptions.getDefaultProjectId();
+	/*
+	 *  Claims automatic Auth on AppEngine:
+	 *    https://github.com/GoogleCloudPlatform/google-cloud-java#authentication
+	 *  
+	 *  Claims gcloud-java doesn't work on AppEngine Standard:
+	 *    https://github.com/GoogleCloudPlatform/google-cloud-java/tree/master/google-cloud-pubsub#quickstart
+	 *    
+	 *  Claims gcloud-java DOES work on AppEngine Standard Java 8:
+	 *    https://cloudplatform.googleblog.com/2017/06/Google-App-Engine-standard-now-supports-Java-8.html
+	 * 	
+	 */
 
-  }
+	// Use gcloud-java
+	try (TopicAdminClient topicAdminClient = TopicAdminClient.create()) {
+		com.google.pubsub.v1.Topic topic = topicAdminClient.getTopic(TopicName.create(projectId, topicName));
+		response.getWriter().println("new: " + topic.getName());
+	} catch (Exception e) {
+		response.getWriter().println(e);
+	}
+	
+	// Use google-api-client
+	try {
+		Pubsub pubsub = new Pubsub.Builder(
+			GoogleNetHttpTransport.newTrustedTransport(),
+			JacksonFactory.getDefaultInstance(),
+			GoogleCredential.getApplicationDefault().createScoped(PubsubScopes.all())
+		).build();
+		
+		Topic topic = pubsub.projects().topics().get(String.format("projects/%s/topics/%s", projectId, topicName)).execute();
+		response.getWriter().println("old: " + topic.getName());
+	} catch (GeneralSecurityException e) {
+		response.getWriter().println(e);
+	}
+	  
+    response.getWriter().println("Hello");
 
-  public static String getInfo() {
-    return "Version: " + System.getProperty("java.version")
-          + " OS: " + System.getProperty("os.name")
-          + " User: " + System.getProperty("user.name");
   }
 
 }

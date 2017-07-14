@@ -31,6 +31,7 @@ repositories {   // repositories for Jar's you access in your code
 }
 
 apply plugin: 'java'                              // standard Java tasks
+apply plugin: 'eclipse'
 apply plugin: 'war'                               // standard Web Archive plugin
 apply plugin: 'com.google.cloud.tools.appengine'  // App Engine tasks
 
@@ -41,8 +42,10 @@ dependencies {
   compile 'jstl:jstl:1.2'
 
 // Add your dependencies here.
-//  compile 'com.google.cloud:google-cloud:+'   // Latest Cloud API's http://googlecloudplatform.github.io/google-cloud-java
-
+  compile 'com.google.cloud:google-cloud:+'   // Latest Cloud API's http://googlecloudplatform.github.io/google-cloud-java
+  compile 'com.google.apis:google-api-services-pubsub:v1-rev356-1.22.0'
+  compile 'com.google.api-client:google-api-client-appengine:+'
+  
   testCompile 'junit:junit:4.12'
   testCompile 'com.google.truth:truth:0.33'
   testCompile 'org.mockito:mockito-all:1.10.19'
@@ -51,10 +54,6 @@ dependencies {
   testCompile 'com.google.appengine:appengine-api-stubs:+'
   testCompile 'com.google.appengine:appengine-tools-sdk:+'
 }
-
-// Always run unit tests
-appengineDeploy.dependsOn test
-appengineStage.dependsOn test
 
 // [START model]
 appengine {  // App Engine tasks configuration
