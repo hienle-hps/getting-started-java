@@ -18,6 +18,7 @@ package com.example.gaejava8standard;
 
 import java.io.IOException;
 import java.security.GeneralSecurityException;
+import java.util.ArrayList;
 
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
@@ -27,11 +28,14 @@ import javax.servlet.http.HttpServletResponse;
 import com.google.api.client.googleapis.auth.oauth2.GoogleCredential;
 import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport;
 import com.google.api.client.json.jackson2.JacksonFactory;
+import com.google.api.gax.core.GoogleCredentialsProvider;
 import com.google.api.services.pubsub.Pubsub;
 import com.google.api.services.pubsub.PubsubScopes;
 import com.google.api.services.pubsub.model.Topic;
+import com.google.auth.oauth2.AccessToken;
 import com.google.cloud.ServiceOptions;
 import com.google.cloud.pubsub.v1.TopicAdminClient;
+import com.google.cloud.pubsub.v1.TopicAdminSettings;
 import com.google.pubsub.v1.TopicName;
 
 // With @WebServlet annotation the webapp/WEB-INF/web.xml is no longer required.
@@ -59,11 +63,21 @@ public class HelloAppEngine extends HttpServlet {
 	 */
 
 	// Use gcloud-java
-	try (TopicAdminClient topicAdminClient = TopicAdminClient.create()) {
+	TopicAdminSettings settings = TopicAdminSettings.defaultBuilder()
+		.setCredentialsProvider(
+			new MyCP(
+				new AccessToken(
+					"TOKEN",
+					null
+				)
+			)
+		).build();
+	
+	try (TopicAdminClient topicAdminClient = TopicAdminClient.create(settings)) {
 		com.google.pubsub.v1.Topic topic = topicAdminClient.getTopic(TopicName.create(projectId, topicName));
 		response.getWriter().println("new: " + topic.getName());
 	} catch (Exception e) {
-		response.getWriter().println(e);
+		throw new IOException(e);
 	}
 	
 	// Use google-api-client
